@@ -27,7 +27,10 @@ func SetLang(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	conf.Lang = util.InitLogLang(lang)
-	if err := conf.SaveConfig(); err != nil {
+	if err := config.UpdateConfig(func(latest *config.Config) error {
+		latest.Lang = conf.Lang
+		return nil
+	}); err != nil {
 		returnError(writer, err.Error())
 		return
 	}

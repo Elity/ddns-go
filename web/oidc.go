@@ -17,6 +17,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/jeessy2/ddns-go/v6/config"
 	"golang.org/x/oauth2"
+	"golang.org/x/sync/singleflight"
 )
 
 var oidcSessions = newOIDCSessions()
@@ -53,30 +54,64 @@ var oidcProviderCache struct {
 }
 
 var oidcHTTPClient = &http.Client{Timeout: 15 * time.Second}
+var oidcDiscovery singleflight.Group
+
+func cachedOIDCProvider(key string) *oidc.Provider {
+	oidcProviderCache.Lock()
+	defer oidcProviderCache.Unlock()
+	if oidcProviderCache.fingerprint == key {
+		return oidcProviderCache.provider
+	}
+	return nil
+}
 
 func getOIDCProvider(ctx context.Context, o config.OIDC) (*oidc.Provider, *oauth2.Config, error) {
 	if err := o.Validate(); err != nil || !o.Enabled {
 		return nil, nil, errors.New("OIDC is disabled or invalid")
 	}
 	key := oidcFingerprint(o)
-	oidcProviderCache.Lock()
-	defer oidcProviderCache.Unlock()
-	if oidcProviderCache.provider == nil || oidcProviderCache.fingerprint != key {
-		provider, err := oidc.NewProvider(oidc.ClientContext(ctx, oidcHTTPClient), o.Issuer)
-		if err != nil {
-			return nil, nil, err
-		}
-		endpoint := provider.Endpoint()
-		for _, raw := range []string{endpoint.AuthURL, endpoint.TokenURL} {
-			u, err := url.Parse(raw)
-			if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil {
-				return nil, nil, errors.New("OIDC endpoints must use HTTPS")
-			}
-		}
-		oidcProviderCache.provider = provider
-		oidcProviderCache.fingerprint = key
+	if err := ctx.Err(); err != nil {
+		return nil, nil, err
 	}
-	return oidcProviderCache.provider, &oauth2.Config{ClientID: o.ClientID, ClientSecret: o.ClientSecret, RedirectURL: o.RedirectURL, Scopes: strings.Fields(o.Scopes), Endpoint: oidcProviderCache.provider.Endpoint()}, nil
+	provider := cachedOIDCProvider(key)
+	if provider == nil {
+		client := oidcHTTPClient
+		result := oidcDiscovery.DoChan(key, func() (any, error) {
+			if cached := cachedOIDCProvider(key); cached != nil {
+				return cached, nil
+			}
+			// Shared discovery has its own bounded lifetime; every waiter can cancel
+			// independently without aborting other callers or holding the cache lock.
+			discoveryCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			provider, err := oidc.NewProvider(oidc.ClientContext(discoveryCtx, client), o.Issuer)
+			if err != nil {
+				return nil, err
+			}
+			endpoint := provider.Endpoint()
+			for _, raw := range []string{endpoint.AuthURL, endpoint.TokenURL} {
+				u, err := url.Parse(raw)
+				if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil {
+					return nil, errors.New("OIDC endpoints must use HTTPS")
+				}
+			}
+			oidcProviderCache.Lock()
+			oidcProviderCache.provider = provider
+			oidcProviderCache.fingerprint = key
+			oidcProviderCache.Unlock()
+			return provider, nil
+		})
+		select {
+		case <-ctx.Done():
+			return nil, nil, ctx.Err()
+		case value := <-result:
+			if value.Err != nil {
+				return nil, nil, value.Err
+			}
+			provider = value.Val.(*oidc.Provider)
+		}
+	}
+	return provider, &oauth2.Config{ClientID: o.ClientID, ClientSecret: o.ClientSecret, RedirectURL: o.RedirectURL, Scopes: strings.Fields(o.Scopes), Endpoint: provider.Endpoint()}, nil
 }
 
 func OIDCStart(w http.ResponseWriter, r *http.Request) {
@@ -237,8 +272,19 @@ func SaveOIDCSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	conf.OIDC = next
-	if err := conf.SaveConfig(); err != nil {
+	conflict := errors.New("OIDC settings changed during discovery; reload and retry")
+	err := config.UpdateConfig(func(latest *config.Config) error {
+		if latest.OIDC != conf.OIDC {
+			return conflict
+		}
+		latest.OIDC = next
+		return nil
+	})
+	if errors.Is(err, conflict) {
+		http.Error(w, conflict.Error(), http.StatusConflict)
+		return
+	}
+	if err != nil {
 		http.Error(w, "Could not save settings", 500)
 		return
 	}

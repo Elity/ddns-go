@@ -90,6 +90,10 @@ var cache = &cacheType{}
 func GetConfigCached() (conf Config, err error) {
 	cache.Lock.Lock()
 	defer cache.Lock.Unlock()
+	return getConfigCachedLocked()
+}
+
+func getConfigCachedLocked() (conf Config, err error) {
 
 	if cache.ConfigSingle != nil {
 		return *cache.ConfigSingle, cache.Err
@@ -173,6 +177,25 @@ func (conf *Config) CompatibleConfig() {
 func (conf *Config) SaveConfig() (err error) {
 	cache.Lock.Lock()
 	defer cache.Lock.Unlock()
+	return conf.saveConfigLocked()
+}
+
+// UpdateConfig applies a field-level change to the latest snapshot atomically.
+// The callback must not call configuration functions or perform network I/O.
+func UpdateConfig(update func(*Config) error) error {
+	cache.Lock.Lock()
+	defer cache.Lock.Unlock()
+	conf, err := getConfigCachedLocked()
+	if err != nil {
+		return err
+	}
+	if err = update(&conf); err != nil {
+		return err
+	}
+	return conf.saveConfigLocked()
+}
+
+func (conf *Config) saveConfigLocked() (err error) {
 
 	byt, err := yaml.Marshal(conf)
 	if err != nil {

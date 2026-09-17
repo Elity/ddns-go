@@ -46,6 +46,8 @@ callback URL and automatic login. It is collapsed by
 default; simply opening or closing it does not change settings. Only edited
 advanced fields are submitted, including edits made before collapsing it again.
 These values also remain configurable in YAML; restart after editing the file.
+The page-wide Save buttons always save DNS/global settings; Save OIDC (or Enter
+in an OIDC text input) saves OIDC only. OIDC inputs are locked while saving.
 Saving OIDC does not save pending DNS/password changes. Old `/oidc-settings` bookmarks
 redirect to the dashboard's OIDC tab.
 
@@ -62,3 +64,17 @@ All state-changing web routes require POST and Go's CrossOriginProtection.
 OIDC callback GETs use state/nonce/PKCE; a minimal callback document completes
 the navigation before entering the application, avoiding cross-origin redirect
 chain errors. Local login is the recovery path if the IdP is unavailable.
+Concurrent discovery requests share a bounded lookup and can cancel independently.
+OIDC saves merge only OIDC into the latest configuration; a concurrent OIDC edit
+returns a conflict instead of overwriting it.
+
+Run the UI regression tests with Node.js 20 or newer:
+
+```sh
+node --test web/oidc_ui_test.mjs
+```
+Local password cookies use Secure on direct TLS connections; direct LAN HTTP
+remains usable for recovery. Forwarded scheme headers are not implicitly trusted.
+When terminating TLS at a reverse proxy, configure that proxy to set Secure on
+the local `token` cookie (for nginx: `proxy_cookie_flags token secure`).
+OIDC cookies are always Secure regardless of the local-login transport.

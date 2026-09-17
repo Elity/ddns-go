@@ -35,17 +35,26 @@
   });
   document.getElementById('formGlobal').addEventListener('submit', event => {
     event.preventDefault();
-    if (!document.getElementById('oidc-panel').hidden) document.getElementById('saveOIDC').click();
-    else document.querySelector('.submit_btn').click();
+    document.querySelector('.submit_btn').click();
+  });
+  document.getElementById('oidc-panel').addEventListener('keydown', event => {
+    if (event.key === 'Enter' && !event.isComposing && event.target.matches('input:not([type=checkbox])')) {
+      event.preventDefault();
+      document.getElementById('saveOIDC').click();
+    }
   });
   document.getElementById('saveOIDC').addEventListener('click', async event => {
     const button = event.currentTarget;
+    if (button.disabled) return;
     const status = document.getElementById('oidcStatus');
     const data = {Enabled: document.getElementById('OIDCEnabled').checked};
     for (const key of ['Issuer', 'ClientID', 'ClientSecret']) data[key] = document.getElementById('OIDC' + key).value;
     if (!callback.dataset.configured) data.RedirectURL = callback.textContent;
     changedAdvanced.forEach(key => { data[key] = advancedValue(key); });
     button.disabled = true;
+    const fields = Array.from(document.querySelectorAll('#oidc-panel input'));
+    const previousDisabled = fields.map(field => field.disabled);
+    fields.forEach(field => { field.disabled = true; });
     status.textContent = '';
     try {
       const response = await fetch('/oidc-settings/save', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
@@ -58,6 +67,9 @@
       changedAdvanced.clear();
       status.textContent = i18n('OIDC saved');
     } catch (error) { status.textContent = error.message; }
-    finally { button.disabled = false; }
+    finally {
+      fields.forEach((field, index) => { field.disabled = previousDisabled[index]; });
+      button.disabled = false;
+    }
   });
 })();
