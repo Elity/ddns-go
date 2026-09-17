@@ -1,4 +1,19 @@
 const I18N_MAP = {
+  'OIDC advanced': {'en': 'Advanced options', 'zh-cn': '高级选项'},
+  'OIDC scopes help': {'en': 'openid is sufficient for sign-in. Change only if your provider requires additional scopes.', 'zh-cn': 'openid 即可用于登录；仅在身份服务有额外要求时修改。'},
+  'OIDC provider access': {'en': 'Control this application’s access at your identity provider. Authorized users can administer DDNS-GO.', 'zh-cn': '请在身份服务中控制此应用的访问权限；获准登录的用户均可管理 DDNS-GO。'},
+  'OIDC redirect help': {'en': 'Must match the HTTPS URL registered at the provider, with path /oidc/callback.', 'zh-cn': '必须与身份服务登记的 HTTPS 地址完全一致，路径为 /oidc/callback。'},
+  'OIDC auto login': {'en': 'Auto login', 'zh-cn': '自动登录'},
+  'OIDC auto login help': {'en': 'Automatically redirect to the identity provider. Local recovery: /login?local=1.', 'zh-cn': '访问登录页时自动跳转身份服务。本地恢复入口：/login?local=1。'},
+  'OIDC enabled': {'en': 'Enable OIDC', 'zh-cn': '启用 OIDC'},
+  'OIDC secret kept': {'en': 'Configured; leave blank to keep', 'zh-cn': '已配置，留空保留'},
+  'OIDC secret required': {'en': 'Enter the client secret from your identity provider', 'zh-cn': '填写身份服务提供的密钥'},
+  'OIDC callback': {'en': 'Callback URL', 'zh-cn': '回调地址'},
+  'OIDC callback help': {'en': 'Register this URL at your identity provider.', 'zh-cn': '将此地址登记到身份服务中。'},
+  'OIDC save': {'en': 'Save OIDC', 'zh-cn': '保存 OIDC'},
+  'OIDC test': {'en': 'Test login', 'zh-cn': '测试登录'},
+  'OIDC saved': {'en': 'OIDC saved. Test login to verify.', 'zh-cn': 'OIDC 已保存，可测试登录。'},
+  'OIDC session expired': {'en': 'Session expired. Refresh the page to sign in again.', 'zh-cn': '登录已过期，请刷新页面重新登录。'},
   'Logs': {
     'en': 'Logs',
     'zh-cn': '日志'

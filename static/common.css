@@ -90,6 +90,32 @@ body {
     border-radius: 4px;
 }
 
+.portlet .account-tabs { justify-content: flex-start; gap: 24px; }
+.account-tab {
+    align-self: stretch; padding: 0 2px; border: 0; border-bottom: 3px solid transparent;
+    background: transparent; color: inherit; font: inherit; cursor: pointer; opacity: .65;
+}
+.account-tab[aria-selected="true"] { opacity: 1; border-bottom-color: #007bff; }
+.account-tab:focus-visible { outline: 2px solid #007bff; outline-offset: -4px; }
+[data-theme='dark'] .account-tab[aria-selected="true"] { border-bottom-color: #80bfff; }
+.oidc-callback { display: block; padding-top: 7px; overflow-wrap: anywhere; }
+.oidc-advanced { margin: 0 0 18px; }
+.oidc-advanced > summary {
+    display: inline-flex; align-items: center; gap: 6px; padding: 2px 0;
+    list-style: none; cursor: pointer; font-size: .875rem; color: #6c757d;
+}
+.oidc-advanced > summary::-webkit-details-marker { display: none; }
+.oidc-advanced > summary::before {
+    content: ''; width: 6px; height: 6px; border-right: 1px solid currentColor;
+    border-bottom: 1px solid currentColor; transform: rotate(-45deg);
+}
+.oidc-advanced[open] > summary::before { transform: rotate(45deg); }
+.oidc-advanced > summary:hover { color: #007bff; }
+.oidc-advanced > summary:focus-visible { outline: 2px solid #007bff; outline-offset: 4px; }
+.oidc-advanced-fields { padding-top: 20px; }
+[data-theme='dark'] .oidc-advanced > summary { color: #9ba8b6; }
+[data-theme='dark'] .oidc-advanced > summary:hover { color: #80bfff; }
+
 [data-theme='dark'] .portlet__body {
     background-color: #22272e !important;
 }

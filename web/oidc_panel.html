@@ -1,0 +1,48 @@
+{{define "oidc-panel"}}
+<div id="oidc-panel" role="tabpanel" aria-labelledby="oidc-tab" hidden>
+  <div class="form-group row">
+    <label for="OIDCEnabled" class="col-sm-2 col-form-label" data-i18n="OIDC enabled">启用 OIDC</label>
+    <div class="col-sm-10"><input type="checkbox" class="form-check-inline" style="margin-top:5px" id="OIDCEnabled" {{if .OIDC.Enabled}}checked{{end}}></div>
+  </div>
+  <div class="form-group row">
+    <label for="OIDCIssuer" class="col-sm-2 col-form-label">Issuer URL</label>
+    <div class="col-sm-10"><input type="url" class="form-control" id="OIDCIssuer" value="{{.OIDC.Issuer}}" placeholder="https://identity.example.com" autocomplete="off"></div>
+  </div>
+  <div class="form-group row">
+    <label for="OIDCClientID" class="col-sm-2 col-form-label">Client ID</label>
+    <div class="col-sm-10"><input class="form-control" id="OIDCClientID" value="{{.OIDC.ClientID}}" autocomplete="off"></div>
+  </div>
+  <div class="form-group row">
+    <label for="OIDCClientSecret" class="col-sm-2 col-form-label">Client Secret</label>
+    <div class="col-sm-10"><input type="password" class="form-control" id="OIDCClientSecret" autocomplete="new-password"><small class="form-text text-muted" data-i18n="{{if .OIDCSecretSet}}OIDC secret kept{{else}}OIDC secret required{{end}}">{{if .OIDCSecretSet}}已配置，留空保留{{else}}填写身份服务提供的密钥{{end}}</small></div>
+  </div>
+  <div class="form-group row">
+    <span class="col-sm-2 col-form-label" data-i18n="OIDC callback">回调地址</span>
+    <div class="col-sm-10"><code id="OIDCCallback" class="oidc-callback" data-configured="{{.OIDC.RedirectURL}}">{{.OIDC.RedirectURL}}</code>
+    <small class="form-text text-muted" data-i18n="OIDC callback help">将此地址登记到身份服务中。</small>
+    <small class="form-text text-muted" data-i18n="OIDC provider access">请在身份服务中控制此应用的访问权限；获准登录的用户均可管理 DDNS-GO。</small></div>
+  </div>
+  <details class="oidc-advanced" id="oidcAdvanced">
+    <summary><span data-i18n="OIDC advanced">高级选项</span></summary>
+    <div class="oidc-advanced-fields">
+      <div class="form-group row">
+        <label for="OIDCScopes" class="col-sm-2 col-form-label">Scopes</label>
+        <div class="col-sm-10"><input class="form-control" id="OIDCScopes" value="{{.OIDC.Scopes}}"><small class="form-text text-muted" data-i18n="OIDC scopes help">openid 即可用于登录；仅在身份服务有额外要求时修改。</small></div>
+      </div>
+      <div class="form-group row">
+        <label for="OIDCRedirectURL" class="col-sm-2 col-form-label" data-i18n="OIDC callback">回调地址</label>
+        <div class="col-sm-10"><input type="url" class="form-control" id="OIDCRedirectURL" value="{{.OIDC.RedirectURL}}"><small class="form-text text-muted" data-i18n="OIDC redirect help">必须与身份服务登记的 HTTPS 地址完全一致，路径为 /oidc/callback。</small></div>
+      </div>
+      <div class="form-group row">
+        <label for="OIDCAutoLogin" class="col-sm-2 col-form-label" data-i18n="OIDC auto login">自动登录</label>
+        <div class="col-sm-10"><input type="checkbox" class="form-check-inline" style="margin-top:5px" id="OIDCAutoLogin" {{if .OIDC.AutoLogin}}checked{{end}}><small class="form-text text-muted" data-i18n="OIDC auto login help">访问登录页时自动跳转身份服务。本地恢复入口：/login?local=1。</small></div>
+      </div>
+    </div>
+  </details>
+  <div class="form-group row mb-0"><div class="col-sm-10 offset-sm-2">
+    <button type="button" class="btn btn-primary" id="saveOIDC" data-i18n="OIDC save">保存 OIDC</button>
+    <a class="btn btn-link" href="/oidc/start" data-i18n="OIDC test">测试登录</a>
+    <div id="oidcStatus" class="form-text" role="status" aria-live="polite"></div>
+  </div></div>
+</div>
+{{end}}

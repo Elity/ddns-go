@@ -36,9 +36,7 @@
             <option value="zh">中文</option>
             <option value="en">English</option>
           </select>
-          <a href="./logout" class="action-button action-button-text logout-button" data-i18n="Logout">
-            Logout
-          </a>
+          <form action="./logout" method="post"><button type="submit" class="action-button action-button-text logout-button" data-i18n="Logout">Logout</button></form>
         </div>
       </div>
     </div>
@@ -281,9 +279,13 @@
         </form>
 
         <form id="formGlobal">
-          <div class="portlet">
-            <h5 data-i18n="Others" class="portlet__head">Others</h5>
+          <div class="portlet" id="account-settings">
+            <div class="portlet__head account-tabs" role="tablist" aria-label="Account settings">
+              <button type="button" class="account-tab" id="account-tab" role="tab" aria-selected="true" aria-controls="account-panel" data-i18n="Others">Others</button>
+              <button type="button" class="account-tab" id="oidc-tab" role="tab" aria-selected="false" aria-controls="oidc-panel" tabindex="-1">OIDC</button>
+            </div>
             <div class="portlet__body">
+              <div id="account-panel" role="tabpanel" aria-labelledby="account-tab">
               <div class="form-group row">
                 <label data-i18n="Deny from WAN" for="NotAllowWanAccess" class="col-sm-2 col-form-label">Deny from
                   WAN</label>
@@ -312,6 +314,8 @@
                   <small data-i18n-html="passwordHelp" id="passwordHelp" class="form-text text-muted"></small>
                 </div>
               </div>
+              </div>
+              {{template "oidc-panel" .}}
             </div>
           </div>
 
@@ -705,6 +709,10 @@
   document.querySelectorAll(".submit_btn").forEach($el => {
     $el.addEventListener('click', async e => {
       e.preventDefault();
+      if (!document.getElementById('oidc-panel').hidden) {
+        document.getElementById('saveOIDC').click();
+        return;
+      }
       // 如果没有idLabel，删除DnsID
       if (!DNS_PROVIDERS[dnsConf[configIndex].DnsName].idLabel) {
         dnsConf[configIndex].DnsID = "";
@@ -833,7 +841,7 @@
   document.getElementById("clearLogBtn").addEventListener('click', async e => {
     e.preventDefault();
     try {
-      await request.get("./clearLog");
+      await request.post("./clearLog", {});
       getLogs();
     } catch (err) {
       showMessage({
@@ -979,4 +987,5 @@
   });
 </script>
 
+<script src="./static/oidc.js"></script>
 </html>

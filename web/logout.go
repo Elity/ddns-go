@@ -6,6 +6,14 @@ import (
 )
 
 func Logout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	if err := oidcSessions.Destroy(r.Context()); err != nil {
+		http.Error(w, "Could not end session", http.StatusInternalServerError)
+		return
+	}
 	// 覆盖cookieInSystem
 	cookieInSystem = &http.Cookie{
 		Name:     cookieName,
@@ -19,5 +27,5 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, cookieInSystem)
 
 	// 重定向用户到登录页面
-	http.Redirect(w, r, "./login", http.StatusFound)
+	http.Redirect(w, r, "/login?local=1", http.StatusFound)
 }

@@ -41,6 +41,12 @@ var ld = &loginDetect{ticker: time.NewTicker(5 * time.Minute)}
 
 // Login login page
 func Login(writer http.ResponseWriter, request *http.Request) {
+	conf, _ := config.GetConfigCached()
+	writer.Header().Set("Cache-Control", "no-store")
+	if conf.OIDC.Enabled && conf.OIDC.AutoLogin && request.URL.Query().Get("local") != "1" {
+		http.Redirect(writer, request, "/oidc/start", http.StatusSeeOther)
+		return
+	}
 	tmpl, err := template.ParseFS(loginEmbedFile, "login.html")
 	if err != nil {
 		fmt.Println("Error happened..")
@@ -48,14 +54,14 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	conf, _ := config.GetConfigCached()
-
 	err = tmpl.Execute(writer, struct {
-		EmptyUser bool   // 未填写用户名和密码
-		Lang      string // 当前后端语言
+		EmptyUser   bool   // 未填写用户名和密码
+		Lang        string // 当前后端语言
+		OIDCEnabled bool
 	}{
-		EmptyUser: conf.Username == "" && conf.Password == "",
-		Lang:      conf.Lang,
+		EmptyUser:   conf.Username == "" && conf.Password == "",
+		Lang:        conf.Lang,
+		OIDCEnabled: conf.OIDC.Enabled,
 	})
 	if err != nil {
 		fmt.Println("Error happened..")
@@ -92,7 +98,6 @@ func LoginFunc(w http.ResponseWriter, r *http.Request) {
 		returnError(w, util.LogStr("必须输入用户名/密码"))
 		return
 	}
-
 
 	// 初始化用户名密码
 	if conf.Username == "" && conf.Password == "" {
@@ -136,6 +141,8 @@ func LoginFunc(w http.ResponseWriter, r *http.Request) {
 			Path:     "/",
 			Expires:  time.Now().AddDate(0, 0, timeoutDays), // 设置过期时间
 			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+			Secure:   r.TLS != nil || conf.OIDC.Enabled,
 		}
 		// 写入cookie
 		http.SetCookie(w, cookieInSystem)

@@ -25,6 +25,7 @@ Automatically obtain your public IPv4 or IPv6 address and resolve it to the corr
 - Support multiple domain name resolution at the same time
 - Support multi-level domain name
 - Configured on the web page, simple and convenient
+- Support OIDC single sign-on
 - In the web page, you can quickly view the latest 50 logs
 - Support Webhook notification
 - Support TTL

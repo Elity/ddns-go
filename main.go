@@ -194,14 +194,18 @@ func runWebServer() error {
 	http.HandleFunc("/static/", web.AuthAssert(staticFsFunc))
 	http.HandleFunc("/favicon.ico", web.AuthAssert(faviconFsFunc))
 	http.HandleFunc("/login", web.AuthAssert(web.Login))
-	http.HandleFunc("/loginFunc", web.AuthAssert(web.LoginFunc))
+	http.HandleFunc("/loginFunc", web.AuthAssert(web.PostOnly(web.LoginFunc)))
+	http.HandleFunc("/oidc/start", web.AuthAssert(web.OIDCStart))
+	http.HandleFunc("/oidc/callback", web.AuthAssert(web.OIDCCallback))
+	http.HandleFunc("/oidc-settings", web.Auth(web.OIDCSettings))
+	http.HandleFunc("/oidc-settings/save", web.Auth(web.SaveOIDCSettings))
 
 	http.HandleFunc("/", web.Auth(web.Writing))
-	http.HandleFunc("/save", web.Auth(web.Save))
-	http.HandleFunc("/setLang", web.Auth(web.SetLang))
+	http.HandleFunc("/save", web.Auth(web.PostOnly(web.Save)))
+	http.HandleFunc("/setLang", web.Auth(web.PostOnly(web.SetLang)))
 	http.HandleFunc("/logs", web.Auth(web.Logs))
-	http.HandleFunc("/clearLog", web.Auth(web.ClearLog))
-	http.HandleFunc("/webhookTest", web.Auth(web.WebhookTest))
+	http.HandleFunc("/clearLog", web.Auth(web.PostOnly(web.ClearLog)))
+	http.HandleFunc("/webhookTest", web.Auth(web.PostOnly(web.WebhookTest)))
 	http.HandleFunc("/logout", web.Auth(web.Logout))
 
 	util.Log("监听 %s", *listen)
@@ -211,7 +215,7 @@ func runWebServer() error {
 		return errors.New(util.LogStr("监听端口发生异常, 请检查端口是否被占用! %s", err))
 	}
 
-	return http.Serve(l, nil)
+	return http.Serve(l, web.SessionMiddleware(http.DefaultServeMux))
 }
 
 // 以守护/分离进程方式运行（Unix 使用 setsid，Windows 使用 DETACHED_PROCESS）

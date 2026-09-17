@@ -12,7 +12,7 @@ import (
 	"github.com/jeessy2/ddns-go/v6/config"
 )
 
-//go:embed writing.html
+//go:embed writing.html oidc_panel.html
 var writingEmbedFile embed.FS
 
 const VersionEnv = "DDNS_GO_VERSION"
@@ -43,7 +43,7 @@ type dnsConf4JS struct {
 
 // Writing 填写信息
 func Writing(writer http.ResponseWriter, request *http.Request) {
-	tmpl, err := template.ParseFS(writingEmbedFile, "writing.html")
+	tmpl, err := template.ParseFS(writingEmbedFile, "writing.html", "oidc_panel.html")
 	if err != nil {
 		fmt.Println("Error happened..")
 		fmt.Println(err)
@@ -71,7 +71,18 @@ func Writing(writer http.ResponseWriter, request *http.Request) {
 		allInterfaces = append(allInterfaces, config.NetInterface{Name: name})
 	}
 
+	// Do not send the OIDC secret to any rendered template.
+	publicOIDC := conf.OIDC
+	publicOIDC.ClientSecret = ""
+	if publicOIDC.Issuer == "" && publicOIDC.ClientID == "" {
+		publicOIDC.AutoLogin = true
+	}
+	if publicOIDC.Scopes == "" {
+		publicOIDC.Scopes = "openid"
+	}
 	err = tmpl.Execute(writer, struct {
+		OIDC              config.OIDC
+		OIDCSecretSet     bool
 		DnsConf           template.JS
 		NotAllowWanAccess bool
 		Username          string
@@ -82,6 +93,8 @@ func Writing(writer http.ResponseWriter, request *http.Request) {
 		Ipv6          []config.NetInterface
 		AllInterfaces []config.NetInterface
 	}{
+		OIDC:              publicOIDC,
+		OIDCSecretSet:     conf.OIDC.ClientSecret != "",
 		DnsConf:           template.JS(getDnsConfStr(conf.DnsConf)),
 		NotAllowWanAccess: conf.NotAllowWanAccess,
 		Username:          conf.User.Username,

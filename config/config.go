@@ -68,6 +68,7 @@ type DNS struct {
 
 type Config struct {
 	DnsConf []DnsConfig
+	OIDC    OIDC
 	User
 	Webhook
 	// 禁止公网访问
