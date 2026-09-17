@@ -122,15 +122,25 @@ func checkAndSave(request *http.Request) string {
 	conf.DnsConf = dnsConfArray
 
 	// 保存到用户目录
-	err = conf.SaveConfig()
+	err = config.UpdateConfig(func(latest *config.Config) error {
+		// This form does not edit OIDC; keep concurrent OIDC saves.
+		conf.OIDC = latest.OIDC
+		if passwordNew == "" {
+			conf.Password = latest.Password
+		}
+		if strings.TrimSpace(data.Lang) == "" {
+			conf.Lang = latest.Lang
+		}
+		*latest = conf
+		return nil
+	})
+	if err != nil {
+		return err.Error()
+	}
 
 	// 只运行一次
 	util.ForceCompareGlobal = true
 	go dns.RunOnce()
 
-	// 回写错误信息
-	if err != nil {
-		return err.Error()
-	}
 	return "ok"
 }

@@ -142,7 +142,9 @@ func LoginFunc(w http.ResponseWriter, r *http.Request) {
 			Expires:  time.Now().AddDate(0, 0, timeoutDays), // 设置过期时间
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
-			Secure:   r.TLS != nil || conf.OIDC.Enabled,
+			// OIDC enablement does not imply TLS on a direct LAN connection.
+			// Forwarded headers are not trusted without a proxy trust policy.
+			Secure: r.TLS != nil,
 		}
 		// 写入cookie
 		http.SetCookie(w, cookieInSystem)
