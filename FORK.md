@@ -16,6 +16,12 @@ OIDC protocol configuration are preserved; restarting invalidates old sessions.
 The `OIDC image` workflow on `master` tests the code, runs the race detector and vet, then
 publishes amd64/arm64 images to **GitHub Container Registry** (GHCR):
 
+Publishing permissions are limited to the publish job. Actions are pinned to
+verified commit SHAs; test and publish jobs have 15/30 minute timeouts. The test
+job also runs the UI regression tests and builds the original Dockerfile.
+The OIDC image's exclusions are in `Dockerfile.oidc.dockerignore` so they do
+not hide the compiled binary required by the original `Dockerfile`.
+
 ```sh
 docker pull ghcr.io/elity/ddns-go:oidc
 docker run -d --name ddns --network host --restart unless-stopped \
