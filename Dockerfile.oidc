@@ -1,0 +1,20 @@
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
+ARG TARGETOS
+ARG TARGETARCH
+ARG VERSION=dev-oidc
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w -X main.version=$VERSION" -o /out/ddns-go .
+
+FROM alpine:3.23
+RUN apk add --no-cache ca-certificates curl grep tzdata
+LABEL org.opencontainers.image.source="https://github.com/Elity/ddns-go"
+LABEL org.opencontainers.image.description="DDNS-GO with native OIDC single sign-on"
+WORKDIR /app
+COPY --from=build /out/ddns-go /app/ddns-go
+ENV TZ=Asia/Shanghai
+EXPOSE 9876
+ENTRYPOINT ["/app/ddns-go"]
+CMD ["-l", ":9876", "-f", "300"]

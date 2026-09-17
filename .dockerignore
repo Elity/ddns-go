@@ -1,0 +1,8 @@
+.git
+.github
+ddns-go
+dist
+tmp
+*.test
+*.out
+.ddns_go_config.yaml
